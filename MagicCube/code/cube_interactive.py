@@ -1,4 +1,3 @@
-#----------------------------------------------------------------------
 # Matplotlib Rubik's cube simulator
 # Written by Jake Vanderplas
 # Adapted from cube code written by David Hogg
@@ -7,7 +6,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import widgets
-from projection import Quaternion, project_points
+from MagicCube.code.projection import Quaternion, project_points
 
 """
 Sticker representation
@@ -18,7 +17,6 @@ Each face is represented by a length [5, 3] array:
 
 Each sticker is represented by a length [9, 3] array:
 
-  [v1a, v1b, v2a, v2b, v3a, v3b, v4a, v4b, v1a]
 
 In both cases, the first point is repeated to close the polygon.
 
@@ -195,9 +193,9 @@ class Cube:
         self._face_centroids[flag, :3] = np.dot(self._face_centroids[flag, :3],
                                                 M.T)
 
-    def draw_interactive(self):
+    def draw_interactive(self, callback=None):
         fig = plt.figure(figsize=(5, 5))
-        fig.add_axes(InteractiveCube(self))
+        fig.add_axes(InteractiveCube(self, callback=callback))
         return fig
 
     def color_id(self):
@@ -206,16 +204,16 @@ class Cube:
         for y, color in it.izip(self._face_centroids, self._colors):
             color_id[self._face_id[tuple(np.around(3 * y[:3]).astype(int))]] = color
         return color_id
-        
-    def print_cube(self):
-        print ' '.join(repr(y) for y in self.color_id())
 
 class InteractiveCube(plt.Axes):
     def __init__(self, cube=None,
                  interactive=True,
                  view=(0, 0, 10),
                  fig=None, rect=[0, 0.16, 1, 0.84],
+                 callback=None,
                  **kwargs):
+        # Optional call-back that receives the cube state whenever it is updated.
+        self.callback = callback
         if cube is None:
             self.cube = Cube(3)
         elif isinstance(cube, Cube):
@@ -271,7 +269,7 @@ class InteractiveCube(plt.Axes):
         self._sticker_polys = None
 
         self._draw_cube()
-        self._print_cube()
+        self._execute_cube_callback()
 
         # connect some GUI events
         self.figure.canvas.mpl_connect('button_press_event',
@@ -306,8 +304,9 @@ class InteractiveCube(plt.Axes):
     def _project(self, pts):
         return project_points(pts, self._current_rot, self._view, [0, 1, 0])
 
-    def _print_cube(self):
-        self.cube.print_cube()
+    def _execute_cube_callback(self):
+        if self.callback:
+            self.callback(self.cube.color_id())
 
     def _draw_cube(self):                
         stickers = self._project(self.cube._stickers)[:, :, :2]
@@ -357,7 +356,7 @@ class InteractiveCube(plt.Axes):
                 self.cube.rotate_face(face, turns * 1. / steps,
                                       layer=layer)
                 self._draw_cube()
-            self._print_cube()
+            self._execute_cube_callback()
 
     def _reset_view(self, *args):
         self.set_xlim(self._start_xlim)
@@ -465,13 +464,12 @@ class InteractiveCube(plt.Axes):
 
                 self.figure.canvas.draw()
 
+def print_cube(sticker_colors):
+    print ' '.join(repr(y) for y in sticker_colors)
+
 if __name__ == '__main__':
     import sys
-    try:
-        N = int(sys.argv[1])
-    except:
-        N = 3
-
+    N = int(sys.argv[1]) if len(sys.argv) >= 2 else 3
     c = Cube(N)
 
     # do a 3-corner swap
@@ -484,6 +482,5 @@ if __name__ == '__main__':
     # c.rotate_face('R', -1)
     # c.rotate_face('U')
 
-    c.draw_interactive()
-
+    c.draw_interactive(callback=print_cube)
     plt.show()

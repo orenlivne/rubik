@@ -7,8 +7,7 @@ Author: Craig Calef <craig@dod.net>
 This code is covered under the MIT License
 '''
 
-import serial, time, sys
-from time import sleep
+import serial
 from msvcrt import getch
 
 SERIAL_DEVICE = 'COM3'  # /dev/cu.usbserial-A900adMy' # Or 'COM3' on my windows machine

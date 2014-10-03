@@ -9,14 +9,13 @@
 
 #define LEDCOUNT 32
 
-/** Uncomment if using the Adafruit LPD8806 library that bit-bangs the serial protocol for the strip
-int dataPin = 2;   
-int clockPin = 3; 
+/** Uncomment if using the Adafruit LPD8806 library that bit-bangs the serial protocol for the strip */
+int dataPin = 12;   
+int clockPin = 10; 
 LPD8806 strip = LPD8806(LEDCOUNT, dataPin, clockPin);
-*/
 
 // For cjbaar's deriviative LPD8806 library
-LPD8806 strip = LPD8806(LEDCOUNT);
+//LPD8806 strip = LPD8806(LEDCOUNT);
 
 char sbuf[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 int si = 0;
