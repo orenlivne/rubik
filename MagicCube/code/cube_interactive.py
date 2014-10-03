@@ -464,8 +464,8 @@ class InteractiveCube(plt.Axes):
 
                 self.figure.canvas.draw()
 
-def print_cube(sticker_colors):
-    print ' '.join(repr(y) for y in sticker_colors)
+def print_cube(sticker_color_id):
+    print ' '.join(repr(y) for y in sticker_color_id)
 
 if __name__ == '__main__':
     import sys
