@@ -402,6 +402,7 @@ class InteractiveCube(plt.Axes):
             else:
                 direction = 1
 
+            N = self.cube.N
             if np.any(self._digit_flags[:N]):
                 for d in np.arange(N)[self._digit_flags[:N]]:
                     self.rotate_face(event.key.upper(), direction, layer=d)
