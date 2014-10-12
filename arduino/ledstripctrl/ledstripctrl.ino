@@ -66,7 +66,7 @@ void loop() {
       }
  #endif
  
-      if (dhexchartoi(sbuf[0], sbuf[1]) <= 32) {
+      if (dhexchartoi(sbuf[0], sbuf[1]) <= LEDCOUNT) {
         l = dhexchartoi(sbuf[0], sbuf[1]);
         r = dhexchartoi(sbuf[2], sbuf[3]);
         g = dhexchartoi(sbuf[4], sbuf[5]);
