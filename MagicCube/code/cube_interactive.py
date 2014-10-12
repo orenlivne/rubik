@@ -6,7 +6,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import widgets
-from MagicCube.code.projection import Quaternion, project_points
+#from MagicCube.code.projection import Quaternion, project_points
+from projection import Quaternion, project_points
 
 """
 Sticker representation
