@@ -373,7 +373,9 @@ class InteractiveCube(plt.Axes):
 
     def _key_press(self, event):
         """Handler for key press events"""
-        if event.key == 'shift':
+        if not event.key:
+            return 
+        elif event.key == 'shift':
             self._shift = True
         elif event.key.isdigit():
             self._digit_flags[int(event.key)] = 1
@@ -398,9 +400,12 @@ class InteractiveCube(plt.Axes):
             self.rotate(Quaternion.from_v_theta(self._ax_UD,
                                                 - 5 * self._step_UD))
         elif event.key.upper() in 'LRUDBF':
-            if self._shift:
+            #if self._shift:
+            if event.key in 'LRUDBF':
+                # Upper-case
                 direction = -1
             else:
+                # Lower-case
                 direction = 1
 
             N = self.cube.N
