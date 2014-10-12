@@ -7,7 +7,7 @@
 #include "LPD8806.h"
 #include <SPI.h>
 
-#define LEDCOUNT 32
+#define LEDCOUNT 64
 
 /** Uncomment if using the Adafruit LPD8806 library that bit-bangs the serial protocol for the strip */
 int dataPin = 12;   
@@ -25,6 +25,9 @@ void setup() {
   strip.begin();
   Serial.begin(115200);
   Serial.println("START");
+
+  // Update the strip, to start they are all 'off'
+  strip.show();
 }
 
 
