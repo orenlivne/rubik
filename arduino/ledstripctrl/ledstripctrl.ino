@@ -7,7 +7,7 @@
 #include "LPD8806.h"
 #include <SPI.h>
 
-#define LEDCOUNT 64
+#define LEDCOUNT 128
 
 /** Uncomment if using the Adafruit LPD8806 library that bit-bangs the serial protocol for the strip */
 int dataPin = 12;   

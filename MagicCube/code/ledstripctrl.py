@@ -134,6 +134,8 @@ if __name__ == '__main__':
 #         for x in face_colors[:6]:
 #             controller.set_uniform_color(x[1:])
 #             time.sleep(3)
+        controller.set_uniform_color('FFFFFF')
+        time.sleep(1000)
         controller.rainbow_cycle(5, 0)
         time.sleep(2)
         controller.turn_off()
