@@ -9,20 +9,18 @@ Author: Craig Calef <craig@dod.net>
 This code is covered under the MIT License
 '''
 
-import serial, time, sys
+import serial, time, sys, ledstripctrl
 import matplotlib.pyplot as plt
 from cube_interactive import Cube
-from ledstripctrl import LedStripController
 
 '''Integrates MagicCube with the LED strip. Sends the cube state
 to the LED strip upon a call to send_cube_state().'''
-class CubeLedStripContoller(LedStripContoller):
+class CubeLedStripContoller(ledstripctrl.LedStripContoller):
     def __init__(self, serial_stream, led_count, face_colors, debug=False):
-        LedStripContoller.__init__(self, serial_stream, led_count, debug=debug)
+        ledstripctrl.LedStripContoller.__init__(self, serial_stream, led_count, debug=debug)
         self.face_colors = map(lambda x: (x[1:] if x.startswith('#') else x).upper(), face_colors)
 
     def send_cube_state(self, sticker_color_id):
-        print face_colors
         print ' '.join(repr(y) for y in sticker_color_id)
         for i in xrange(min(led_count, len(sticker_color_id))):
             print 'Sticker %d: color %s' % (i, self.face_colors[sticker_color_id[i]])
@@ -38,11 +36,16 @@ if __name__ == '__main__':
     serial_device = sys.argv[1]
     # Number of LED lights on the strip.
     led_count = int(sys.argv[2])
-    # Cube face colors. Must be in 6-letter uppercase hex format.
-    face_colors = ['#ffffff', '#ffcf00',
-                   '#00008f', '#009f0f',
-                   '#ff6f00', '#cf0000',
-                   'gray', 'none']  # Unclear what those last two colors are.
+    # Cube face colors. Each color must be in 6-letter uppercase hex format.
+    # These are displayed on the screen.
+    display_face_colors = ['#ffffff', '#ffcf00',
+                           '#00008f', '#009f0f',
+                           '#ff6f00', '#cf0000']
+    # These are displayed on the LED strip.
+    strip_face_colors = ['#ffffff', '#ffff00',
+                         '#0000ff', '#00cf00',
+                         '#6d1200', '#ff0000']
+
     # Cube dimension.
     N = 3
     
@@ -54,11 +57,11 @@ if __name__ == '__main__':
 
         # Start LED controller.
         print 'Starting controller'
-        controller = CubeLedStripContoller(stream, led_count, face_colors[:2 * N], debug=True)
+        controller = CubeLedStripContoller(stream, led_count, strip_face_colors, debug=1)
     
         # Bring up the cube visualization. Add a call back that sends
         # the cube state to the Arduino.
-        c = Cube(N, face_colors=face_colors)
+        c = Cube(N, face_colors=display_face_colors + ['gray', 'none'])  # Unclear what those last two colors are used for.
         c.draw_interactive(callback=controller.send_cube_state)
         plt.show()
 

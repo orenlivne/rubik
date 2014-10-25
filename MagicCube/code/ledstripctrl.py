@@ -12,55 +12,55 @@ import serial, time, sys, readline
 
 class LedStripContoller(object):
     '''A generic controller of a digital LED strip via a USB stream.''' 
-    def __init__(self, serial_stream, led_count, debug=False):
+    def __init__(self, serial_stream, led_count, debug=0):
         self._serial_stream = serial_stream
-        self._led_count = led_count
+        self.led_count = led_count
         self._debug = debug
         self.turn_off()
             
     def set_uniform_color(self, color):
         '''Set a uniform color to all LEDs.'''
-        for i in xrange(self._led_count):
+        for i in xrange(self.led_count):
             self._led_set(i, color)
         self._show()
 
     def set_led(self, led, rgb):
         # Set a single led to the color rgb.
-        self._led_set(i, color)
+        self._led_set(led, color)
         self._show()
 
     def turn_off(self):
         '''Turn the strip off.'''
         self.set_uniform_color('000000')
     
-    def blink_test(self, num_blinks, color='FFFFFF'):
+    def blink_test(self, num_blinks, blink_time=0.25, color='FFFFFF'):
         for _ in xrange(num_blinks):
             self.turn_off()
             # self._show()
-            sleep(0.25)
+            time.sleep(blink_time)
             
             self.set_uniform_color(color)
             # self._show()
-            sleep(0.25)
+            time.sleep(blink_time)
         self.turn_off()
 
     def rainbow_cycle(self, num_cycles=5, delay=0):
         '''Makes a rainbow wheel that is equally distributed along the chain.'''
         num_colors = 384
-        for j in xrange(1):  # xrange(num_colors * num_cycles):  # n cycles of all 384 colors in the wheel
-            for i in xrange(self._led_count):
+        for j in xrange(1): #xrange(num_colors * num_cycles):  # n cycles of all 384 colors in the wheel
+            for i in xrange(self.led_count):
                 # tricky math! we use each pixel as a fraction of the full 384-color wheel
                 # (thats the i / strip.numPixels() part)
                 # Then add in j which makes the colors go around per pixel
                 # the % 384 is to make the wheel cycle around
-                r, g, b = self._wheel(((i * num_colors / self._led_count) + j) % num_colors)
+                r, g, b = self._wheel(((i * num_colors / self.led_count) + j) % num_colors)
                 self._led_set(i, '%02X%02X%02X' % (r, g, b))
             self._show()
             time.sleep(delay)
 
     def _flush_read_buffer(self):
         data_from_arduino = self._serial_stream.readline().strip()
-        if self._debug:
+        if self._debug >= 2:
             print data_from_arduino
     
     def _show(self):
@@ -69,7 +69,8 @@ class LedStripContoller(object):
     
     def _led_set(self, led, rgb):
         outval = '%02X%0s' % (led, rgb)
-        print 'Setting LED %d to %s (outval=%s)' % (led, rgb, outval)
+        if self._debug >= 1:
+            print 'Setting LED %d to %s (outval=%s)' % (led, rgb, outval)
         self._serial_stream.write('%s\n' % outval)
         self._flush_read_buffer()
 
@@ -109,30 +110,11 @@ if __name__ == '__main__':
 
         # Start LED controller.
         print 'Starting controller'
-        controller = LedStripContoller(stream, led_count, debug=True)
+        controller = LedStripContoller(stream, led_count, debug=1)
         
         # Run a strip test.
         print 'Blink test'
-        controller.blink_test(3)
-
-        # Wait for user input and light the one specified LED at a time with
-        # a specified color.
-        print 'Single LED light test. Type "q" to quit. Light #s are 0-based.'
-        while True:
-            try:
-                led = raw_input('LED light: ')
-                if led == 'q':
-                    break
-                led = int(led)
-                if led < 0 or led >= led_count:
-                    raise ValueError('Invalid light number. Must be in 0..' + repr(led_count) + '.')
-
-                color = raw_input('Color RGB: ')
-                if color == 'q':
-                    break
-                controller.set_led(led, color)
-            except e:
-                print 'Bad input:' + e.message
+        controller.blink_test(1, time=0.1)
 
         # Shut down strip.
         controller.turn_off()
