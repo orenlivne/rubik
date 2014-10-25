@@ -8,12 +8,7 @@ Usage: ledstripctrl <arduino-usb-port> <led-count>
 Author: Craig Calef <craig@dod.net>
 This code is covered under the MIT License
 '''
-
-import serial, time, sys
-import matplotlib.pyplot as plt
-from time import sleep
-#from MagicCube.code.cube_interactive import Cube
-from cube_interactive import Cube
+import serial, time, sys, readline
 
 class LedStripContoller(object):
     '''A generic controller of a digital LED strip via a USB stream.''' 
@@ -29,6 +24,11 @@ class LedStripContoller(object):
             self._led_set(i, color)
         self._show()
 
+    def set_led(self, led, rgb):
+        # Set a single led to the color rgb.
+        self._led_set(i, color)
+        self._show()
+
     def turn_off(self):
         '''Turn the strip off.'''
         self.set_uniform_color('000000')
@@ -37,11 +37,11 @@ class LedStripContoller(object):
         for _ in xrange(num_blinks):
             self.turn_off()
             # self._show()
-            sleep(0.5)
+            sleep(0.25)
             
             self.set_uniform_color(color)
             # self._show()
-            sleep(0.5)
+            sleep(0.25)
         self.turn_off()
 
     def rainbow_cycle(self, num_cycles=5, delay=0):
@@ -91,21 +91,6 @@ class LedStripContoller(object):
             g = 0  # green off
         return r, g, b
     
-'''Integrates MagicCube with the LED strip. Sends the cube state
-to the LED strip upon a call to send_cube_state().'''
-class CubeLedStripContoller(LedStripContoller):
-    def __init__(self, serial_stream, led_count, face_colors, debug=False):
-        LedStripContoller.__init__(self, serial_stream, led_count, debug=debug)
-        self.face_colors = map(lambda x: (x[1:] if x.startswith('#') else x).upper(), face_colors)
-
-    def send_cube_state(self, sticker_color_id):
-        print face_colors
-        print ' '.join(repr(y) for y in sticker_color_id)
-        for i in xrange(min(led_count, len(sticker_color_id))):
-            print 'Sticker %d: color %s' % (i, self.face_colors[sticker_color_id[i]])
-            self._led_set(i, self.face_colors[sticker_color_id[i]])
-            self._show()
-        
 if __name__ == '__main__':
     # Read command-line arguments.
     if len(sys.argv) != 3:
@@ -115,40 +100,43 @@ if __name__ == '__main__':
     serial_device = sys.argv[1]
     # Number of LED lights on the strip.
     led_count = int(sys.argv[2])
-    # Cube face colors. Must be in 6-letter uppercase hex format.
-    face_colors = ['#ffffff', '#ffcf00',
-                   '#00008f', '#009f0f',
-                   '#ff6f00', '#cf0000',
-                   'gray', 'none']  # Unclear what those last two colors are.
-    # Cube dimension.
-    N = 3
     
     try:
         # Establish an Arduino connection first.
         print 'Connecting to Arduino...'
         stream = serial.Serial(serial_device, 115200)
         time.sleep(2)
+
+        # Start LED controller.
         print 'Starting controller'
-        controller = CubeLedStripContoller(stream, led_count, face_colors[:2 * N], debug=True)
-        # Test how face colors appear on the LED strip.
-#         for x in face_colors[:6]:
-#             controller.set_uniform_color(x[1:])
-#             time.sleep(3)
-        controller.set_uniform_color('FFFFFF')
-        time.sleep(1000)
-        controller.rainbow_cycle(5, 0)
-        time.sleep(2)
-        controller.turn_off()
-                
-        # input('Press ENTER to continue.')
-        # controller.blink_test(N, color='#ff0000')
-    
-        # Bring up the cube visualization. Add a call back that sends
-        # the cube state to the Arduino.
-        c = Cube(N, face_colors=face_colors)
-        c.draw_interactive(callback=controller.send_cube_state)
-        plt.show()
+        controller = LedStripContoller(stream, led_count, debug=True)
+        
+        # Run a strip test.
+        print 'Blink test'
+        controller.blink_test(3)
+
+        # Wait for user input and light the one specified LED at a time with
+        # a specified color.
+        print 'Single LED light test. Type "q" to quit. Light #s are 0-based.'
+        while True:
+            try:
+                led = raw_input('LED light: ')
+                if led == 'q':
+                    break
+                led = int(led)
+                if led < 0 or led >= led_count:
+                    raise ValueError('Invalid light number. Must be in 0..' + repr(led_count) + '.')
+
+                color = raw_input('Color RGB: ')
+                if color == 'q':
+                    break
+                controller.set_led(led, color)
+            except e:
+                print 'Bad input:' + e.message
+
+        # Shut down strip.
         controller.turn_off()
     except (IOError, OSError):
+        # Error or interrupt, shut down strip.
         controller.turn_off()
         sys.exit(141)
