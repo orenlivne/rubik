@@ -9,16 +9,19 @@ Author: Craig Calef <craig@dod.net>
 This code is covered under the MIT License
 '''
 import serial, time, sys, ledstripctrl, numpy as np
+from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib import widgets
 
 class StrandtestUi(plt.Axes):
-    def __init__(self, controller, fig=None, rect=[0, 0.16, 1, 0.84], **kwargs):
+    def __init__(self, controller, fig=None, rect=[0, 0.0, 1, 0.01], **kwargs):
         # Initialize internal state.
         self._controller = controller
         self._led_count = self._controller.led_count
         # Keeps track of the current strip LED light colors.
         self._led = ['000000'] * self._led_count
+        # Current LED selected color
+        self._rgb = [127, 127, 127]
 
         if fig is None:
             fig = plt.gcf()
@@ -52,6 +55,7 @@ class StrandtestUi(plt.Axes):
 #        self._execute_cube_callback()
 
         # connect some GUI events
+        self.figure.canvas.set_window_title('LED Strip Control')
         self.figure.canvas.mpl_connect('button_press_event',
                                        self._mouse_press)
         self.figure.canvas.mpl_connect('button_release_event',
@@ -67,22 +71,75 @@ class StrandtestUi(plt.Axes):
 
         # write some instructions
         self.figure.text(0.025, 0.9,
-                         "Mouse/arrow keys adjust view\n"
-                         "U/D/L/R/B/F keys turn faces\n"
-                         "(hold shift for counter-clockwise)",
+                         "Slide red, green, blue and click LED#\n"
+                         "to light an individual LED",
                          size=10)
 
+    def _rgb_string(self):
+        return ''.join(map(lambda x: hex(x)[2:].rjust(2,'0'), self._rgb))
+
     def _initialize_widgets(self):
-        self._ax_reset = self.figure.add_axes([0.75, 0.05, 0.2, 0.075])
+        self._rgb_text = self.figure.text(0.075, 0.6, "LED color: #" + self._rgb_string())
+        self._ax_rgb = self.figure.add_axes([0.3, 0.6, 0.025, 0.025])
+        self._btn_rgb = widgets.Button(self._ax_rgb, '')
+
+        x, y, hx = 0.5, 0.9, 0.15
+        self._ax_blink = self.figure.add_axes([x, y, hx, 0.075])
+        self._btn_blink = widgets.Button(self._ax_blink, 'Blink')
+        self._btn_blink.on_clicked(self._blink)
+
+        x += hx
+        self._ax_rainbow = self.figure.add_axes([x, y, hx, 0.075])
+        self._btn_rainbow = widgets.Button(self._ax_rainbow, 'Rainbow')
+        self._btn_rainbow.on_clicked(self._rainbow_cycle)
+
+        x += hx
+        self._ax_reset = self.figure.add_axes([x, y, hx, 0.075])
         self._btn_reset = widgets.Button(self._ax_reset, 'Reset')
         self._btn_reset.on_clicked(self._turn_off)
+        
+        self._slider_ax = [None] * 3
+        self._slider = [None] * 3
+        for i, label in enumerate(['Red', 'Green', 'Blue']):
+            self._slider_ax[i] = plt.axes([0.15, 0.8 - 0.05*i, 0.75, 0.02])
+            self._slider[i] = widgets.Slider(self._slider_ax[i], label, 0, 255, valfmt='%d', valinit=127, color='#FF0000')
+            self._slider[i].on_changed(partial(self.on_rgb_change, index=i))
 
-        self._ax_solve = self.figure.add_axes([0.55, 0.05, 0.2, 0.075])
-        self._btn_solve = widgets.Button(self._ax_solve, 'Rainbow')
-        self._btn_solve.on_clicked(self._rainbow_cycle)
+        self._ax_led = [None]*self._led_count
+        self._btn_led = [None]*self._led_count
+        x, y = 0.05, 0.5
+        for i in xrange(self._led_count):
+            self._ax_led[i] = self.figure.add_axes([x, y, 0.05, 0.075])
+            self._btn_led[i] = widgets.Button(self._ax_led[i], '%d' % (i,))
+            self._btn_led[i].on_clicked(partial(self.on_led_click, index=i))
+            if i % 15 == 14:
+                y -= 0.1
+                x = 0.05
+            else:
+                x += 0.05
+
+    def on_led_click(self, event, index):
+        rgb = self._rgb_string()
+        self._controller.set_led(index, rgb)
+        color = '#' + rgb
+        self._btn_led[index].color = color
+        self._btn_led[index].hovercolor = color
+        self.figure.canvas.draw()
+
+    def on_rgb_change(self, val, index):
+        self._rgb[index] = int(val)
+        rgb = self._rgb_string()
+        self._rgb_text.set_text( "LED color: #" + rgb)
+        color = '#' + rgb
+        self._btn_rgb.color = color
+        self._btn_rgb.hovercolor = color
+        self.figure.canvas.draw()
 
     def _turn_off(self, *args):
         self._controller.turn_off()
+
+    def _blink(self, *args):
+        self._controller.blink(1)
 
     def _rainbow_cycle(self, *args):
         self._controller.rainbow_cycle()
@@ -132,7 +189,6 @@ class StrandtestUi(plt.Axes):
 
     def _mouse_press(self, event):
         """Handler for mouse button press"""
-        print event
         self._event_xy = (event.x, event.y)
         if event.button == 1:
             self._button1 = True
@@ -168,7 +224,7 @@ class StrandtestUi(plt.Axes):
 
 def draw_strandtest_ui(controller):
     # Main call that draws the strand test UI figure.
-    fig = plt.figure(figsize=(5, 5))
+    fig = plt.figure(figsize=(7, 5))
     fig.add_axes(StrandtestUi(controller))
     return fig
 
@@ -190,8 +246,9 @@ if __name__ == '__main__':
 
         # Start LED controller.
         print 'Starting controller'
-        controller = ledstripctrl.LedStripContoller(stream, led_count, debug=1)
+        controller = ledstripctrl.LedStripContoller(stream, led_count, debug=0)
 
+        print 'Building UI'
         draw_strandtest_ui(controller)
         plt.show()
 

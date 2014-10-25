@@ -26,14 +26,14 @@ class LedStripContoller(object):
 
     def set_led(self, led, rgb):
         # Set a single led to the color rgb.
-        self._led_set(led, color)
+        self._led_set(led, rgb)
         self._show()
 
     def turn_off(self):
         '''Turn the strip off.'''
         self.set_uniform_color('000000')
     
-    def blink_test(self, num_blinks, blink_time=0.25, color='FFFFFF'):
+    def blink(self, num_blinks, blink_time=0.25, color='FFFFFF'):
         for _ in xrange(num_blinks):
             self.turn_off()
             # self._show()
@@ -114,7 +114,7 @@ if __name__ == '__main__':
         
         # Run a strip test.
         print 'Blink test'
-        controller.blink_test(1, time=0.1)
+        controller.blink(1, time=0.1)
 
         # Shut down strip.
         controller.turn_off()

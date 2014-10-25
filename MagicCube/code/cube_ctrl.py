@@ -39,12 +39,12 @@ if __name__ == '__main__':
     # Cube face colors. Each color must be in 6-letter uppercase hex format.
     # These are displayed on the screen.
     display_face_colors = ['#ffffff', '#ffcf00',
-                           '#00008f', '#009f0f',
-                           '#ff6f00', '#cf0000']
+                           '#0000ff', '#009f0f',
+                           '#ff00ff', '#cf0000']
     # These are displayed on the LED strip.
     strip_face_colors = ['#ffffff', '#ffff00',
                          '#0000ff', '#00cf00',
-                         '#6d1200', '#ff0000']
+                         '#50002f', '#ff0000']
 
     # Cube dimension.
     N = 3
