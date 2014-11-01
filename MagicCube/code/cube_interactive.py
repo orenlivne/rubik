@@ -269,6 +269,7 @@ class InteractiveCube(plt.Axes):
         self._face_polys = None
         self._sticker_polys = None
 
+        self.prev_state = self.cube.color_id()
         self._draw_cube()
         self._execute_cube_callback()
 
@@ -306,8 +307,14 @@ class InteractiveCube(plt.Axes):
         return project_points(pts, self._current_rot, self._view, [0, 1, 0])
 
     def _execute_cube_callback(self):
-        if self.callback:
-            self.callback(self.cube.color_id())
+        color_id = self.cube.color_id()
+#         if self.callback:
+#             self.callback(color_id)
+        print ' '.join(repr(y) for y in color_id)
+        for i in xrange(len(color_id)):
+            if self.prev_state[i] != color_id[i]:
+                print 'Sticker %d changed from %d to %d' % (i, self.prev_state[i], color_id[i])
+        self.prev_state = self.cube.color_id()
 
     def _draw_cube(self):                
         stickers = self._project(self.cube._stickers)[:, :, :2]
