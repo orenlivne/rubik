@@ -474,13 +474,20 @@ class InteractiveCube(plt.Axes):
 def print_cube(sticker_color_id):
     print ' '.join(repr(y) for y in sticker_color_id)
 
+def bin2dec(bin_tuple):
+    return int(''.join(map(str, bin_tuple)), 2)
+
 class CubeStickerIdDiscoverer(object):
+    _FACES = 'UDLRBF'
+    
     def __init__(self, cube):
         self._cube = cube
         self._prev_state = self.state()
+        # Face ID 0..5 of each sticker.
+        self._face_id = self.state()
 
     def changed_on_rotate_face(self, f, n=1, layer=0):
-        #print 'Rotating face', f, n, 'times'
+        # print 'Rotating face', f, n, 'times'
         self._cube.rotate_face(f, n=n, layer=layer)
         color_id = self.state()
         changed = np.array([i for i in xrange(len(color_id)) if self._prev_state[i] != color_id[i]])
@@ -503,13 +510,79 @@ class CubeStickerIdDiscoverer(object):
     def state(self):
         return self._cube.color_id()
 
-    def print_color_id(self):
+    def print_state(self):
         print ' '.join(repr(y) for y in self._prev_state)
+
+    def discover_sticker_ids(self):
+        # Constants and aliaaes.
+        faces = CubeStickerIdDiscoverer._FACES
+        dim = 3
+        N = self._cube.N
+        sticker_id = -np.ones((2 * dim * N * N, 3), dtype=int)
+        
+        # Enumerate corners from 0 to 2^dim - 1.
+        corners = map(np.array, (map(int, bin(i)[2:].rjust(dim, '0')) for i in xrange(2 ** dim)))
+        corner_face_ids = map(lambda bin_tuple: np.array([2 * d + x for d, x in enumerate(bin_tuple)]), corners)
+#         print 'corners', corners
+#         print 'corner face IDs', corner_face_ids
+#         print 'as letters', [map(faces.__getitem__, x) for x in corner_face_ids]
+
+        # Enumerate cube edges and the corners they connect.
+        edges = []
+        for i, corner in enumerate(corners):
+            corner_face_id = corner_face_ids[i]
+            adjacent_corner = corner.copy()
+            for d in xrange(dim):
+                adjacent_corner[d] = 1 - corner[d]
+                if tuple(corner) < tuple(adjacent_corner):
+                    edges.append((i, bin2dec(adjacent_corner), corner_face_id[np.where(corner == adjacent_corner)[0]]))
+                adjacent_corner[d] = corner[d]
+#        print 'edges', edges
+        
+        # Identify the two corners moved by moving two adjacent faces. These corners lie on the
+        # opposite faces to the faces moved. For example, for faces RF, the corners are URF and BRF.
+        # Only consider one corner at a time (say URF) and set its sticker IDs. We double the work but
+        # it's still linear in the dimension.
+        for i, corner_face_id in enumerate(corner_face_ids):
+            print 'corner', i, corner_face_id, ''.join(map(faces.__getitem__, corner_face_id))
+            for d in xrange(dim):
+                edge_faces = [f for e, f in enumerate(corner_face_id) if e != d]
+                changed = self.changed_due_to_faces(map(faces.__getitem__, edge_faces))
+                changed = changed[self._face_id[changed] == corner_face_id[d]]
+                if len(changed) != 1:
+                    raise ValueError('Did not find a unique corner piece by rotating two adjacent faces %s' % \
+                                     repr(map(faces.__getitem__, edge_faces)))
+                changed = changed[0]
+                print '\t', 'face', faces[corner_face_id[d]], changed
+                sticker_id[changed] = [corner_face_id[d], edge_faces[0], edge_faces[1]]
+                # sticker_id[corner_face_id[d]]
+        for _, _, (e1, e2) in edges:
+            print 'edge', faces[e1], faces[e2]
+
+            changed = self.changed_due_to_face(faces[e1])
+            changed = changed[(self._face_id[changed] == e2) & (sticker_id[changed, 0] < 0)]
+            if len(changed) != 1:
+                raise ValueError('Did not find a unique edge piece by rotating two adjacent faces %s, %s' % \
+                                 (faces[e1], faces[e2]))
+            changed = changed[0]
+            sticker_id[changed] = [e2, e1, -1]
+            print '\t', 'face', faces[e2], changed
+            
+            changed = self.changed_due_to_face(faces[e2])
+            changed = changed[(self._face_id[changed] == e1) & (sticker_id[changed, 0] < 0)]
+            if len(changed) != 1:
+                raise ValueError('Did not find a unique edge piece by rotating two adjacent faces %s, %s' % \
+                                 (faces[e2], faces[e1]))
+            changed = changed[0]
+            sticker_id[changed] = [e1, e2, -1]
+            print '\t', 'face', faces[e1], changed
+        
+        return sticker_id
 
 if __name__ == '__main__':
     import sys
     N = int(sys.argv[1]) if len(sys.argv) >= 2 else 3
-    face_colors=["white", "yellow",
+    face_colors = ["white", "yellow",
                  "blue", "green",
                  "purple", "red",
                  "gray", "none"]    
@@ -526,10 +599,11 @@ if __name__ == '__main__':
     # c.rotate_face('U')
 
     d = CubeStickerIdDiscoverer(c)
-    print d.state()
-    print d.changed_due_to_face('U')
-    print d.changed_due_to_face('R')
-    print d.changed_due_to_faces('RF')
+    sticker_id = d.discover_sticker_ids()
+    a = np.concatenate((np.arange(sticker_id.shape[0])[np.newaxis].transpose(), sticker_id), axis=1)
+    print a
+    for f in xrange(6):
+        print 'Face', f, 'stickers', np.where(a[:, 1] == f)
 
-    c.draw_interactive(callback=print_cube)
-    plt.show()
+#    c.draw_interactive(callback=print_cube)
+    # plt.show()
