@@ -195,7 +195,7 @@ class Cube:
                                                 M.T)
 
     def draw_interactive(self, callback=None):
-        fig = plt.figure(figsize=(5, 5))
+        fig = plt.figure(figsize=(7, 5))
         fig.add_axes(InteractiveCube(self, callback=callback))
         return fig
 
@@ -207,6 +207,8 @@ class Cube:
         return color_id
 
 class InteractiveCube(plt.Axes):
+    FACES = 'LRUDBF'
+    
     def __init__(self, cube=None,
                  interactive=True,
                  view=(0, 0, 10),
@@ -294,13 +296,17 @@ class InteractiveCube(plt.Axes):
                          size=10)
 
     def _initialize_widgets(self):
-        self._ax_reset = self.figure.add_axes([0.75, 0.05, 0.2, 0.075])
+        self._ax_reset = self.figure.add_axes([0.8, 0.05, 0.15, 0.075])
         self._btn_reset = widgets.Button(self._ax_reset, 'Reset View')
         self._btn_reset.on_clicked(self._reset_view)
 
-        self._ax_solve = self.figure.add_axes([0.55, 0.05, 0.2, 0.075])
+        self._ax_solve = self.figure.add_axes([0.65, 0.05, 0.15, 0.075])
         self._btn_solve = widgets.Button(self._ax_solve, 'Solve Cube')
         self._btn_solve.on_clicked(self._solve_cube)
+
+        self._ax_randomize = self.figure.add_axes([0.5, 0.05, 0.15, 0.075])
+        self._btn_randomize = widgets.Button(self._ax_randomize, 'Randomize')
+        self._btn_randomize.on_clicked(self._randomize_cube)
 
     def _project(self, pts):
         return project_points(pts, self._current_rot, self._view, [0, 1, 0])
@@ -351,13 +357,13 @@ class InteractiveCube(plt.Axes):
     def rotate(self, rot):
         self._current_rot = self._current_rot * rot
 
-    def rotate_face(self, face, turns=1, layer=0, steps=5):
+    def rotate_face(self, face, turns=1, layer=0, steps=5, execute_call_back=True):
         if not np.allclose(turns, 0):
             for _ in xrange(steps):
-                self.cube.rotate_face(face, turns * 1. / steps,
-                                      layer=layer)
+                self.cube.rotate_face(face, turns * 1. / steps, layer=layer)
                 self._draw_cube()
-            self._execute_cube_callback()
+            if execute_call_back:
+                self._execute_cube_callback()
 
     def _reset_view(self, *args):
         self.set_xlim(self._start_xlim)
@@ -370,6 +376,21 @@ class InteractiveCube(plt.Axes):
         for (face, n, layer) in move_list[::-1]:
             self.rotate_face(face, -n, layer, steps=3)
         self.cube._move_list = []
+
+    def _randomize_cube(self, *args):
+        # Reset the cube.
+        self.set_xlim(self._start_xlim)
+        self.set_ylim(self._start_ylim)
+        self._current_rot = self._start_rot
+
+        # Perform a sequence of random moves.
+        layer = 0
+        for _ in xrange(15):
+            face = InteractiveCube.FACES[np.random.randint(2 * self.cube.N)]
+            n = np.random.randint(4)
+            self.rotate_face(face, n, layer, steps=3, execute_call_back=False)
+            self._draw_cube()
+        self._execute_cube_callback()
 
     def _key_press(self, event):
         """Handler for key press events"""
@@ -399,9 +420,9 @@ class InteractiveCube(plt.Axes):
         elif event.key == 'down':
             self.rotate(Quaternion.from_v_theta(self._ax_UD,
                                                 - 5 * self._step_UD))
-        elif event.key.upper() in 'LRUDBF':
+        elif event.key.upper() in InteractiveCube.FACES:
             # if self._shift:
-            if event.key in 'LRUDBF':
+            if event.key in InteractiveCube.FACES:
                 # Upper-case
                 direction = -1
             else:
@@ -598,12 +619,8 @@ if __name__ == '__main__':
     # c.rotate_face('R', -1)
     # c.rotate_face('U')
 
-    d = CubeStickerIdDiscoverer(c)
-    sticker_id = d.discover_sticker_ids()
-    a = np.concatenate((np.arange(sticker_id.shape[0])[np.newaxis].transpose(), sticker_id), axis=1)
-    print a
-    for f in xrange(6):
-        print 'Face', f, 'stickers', np.where(a[:, 1] == f)
+#     d = CubeStickerIdDiscoverer(c)
+#     sticker_id = d.discover_sticker_ids()
 
-#    c.draw_interactive(callback=print_cube)
-    # plt.show()
+    c.draw_interactive(callback=print_cube)
+    plt.show()
