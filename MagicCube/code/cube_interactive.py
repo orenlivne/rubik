@@ -6,7 +6,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import widgets
-#from MagicCube.code.projection import Quaternion, project_points
+# from MagicCube.code.projection import Quaternion, project_points
 from projection import Quaternion, project_points
 
 """
@@ -269,7 +269,6 @@ class InteractiveCube(plt.Axes):
         self._face_polys = None
         self._sticker_polys = None
 
-        self.prev_state = self.cube.color_id()
         self._draw_cube()
         self._execute_cube_callback()
 
@@ -307,14 +306,8 @@ class InteractiveCube(plt.Axes):
         return project_points(pts, self._current_rot, self._view, [0, 1, 0])
 
     def _execute_cube_callback(self):
-        color_id = self.cube.color_id()
-#         if self.callback:
-#             self.callback(color_id)
-        print ' '.join(repr(y) for y in color_id)
-        for i in xrange(len(color_id)):
-            if self.prev_state[i] != color_id[i]:
-                print 'Sticker %d changed from %d to %d' % (i, self.prev_state[i], color_id[i])
-        self.prev_state = self.cube.color_id()
+        if self.callback:
+            self.callback(self.cube.color_id())
 
     def _draw_cube(self):                
         stickers = self._project(self.cube._stickers)[:, :, :2]
@@ -407,7 +400,7 @@ class InteractiveCube(plt.Axes):
             self.rotate(Quaternion.from_v_theta(self._ax_UD,
                                                 - 5 * self._step_UD))
         elif event.key.upper() in 'LRUDBF':
-            #if self._shift:
+            # if self._shift:
             if event.key in 'LRUDBF':
                 # Upper-case
                 direction = -1
@@ -481,10 +474,46 @@ class InteractiveCube(plt.Axes):
 def print_cube(sticker_color_id):
     print ' '.join(repr(y) for y in sticker_color_id)
 
+class CubeStickerIdDiscoverer(object):
+    def __init__(self, cube):
+        self._cube = cube
+        self._prev_state = self.state()
+
+    def changed_on_rotate_face(self, f, n=1, layer=0):
+        #print 'Rotating face', f, n, 'times'
+        self._cube.rotate_face(f, n=n, layer=layer)
+        color_id = self.state()
+        changed = np.array([i for i in xrange(len(color_id)) if self._prev_state[i] != color_id[i]])
+        self._prev_state = color_id
+        return changed
+
+    def changed_due_to_face(self, f, layer=0):
+        changed = self.changed_on_rotate_face(f, 1, layer=layer)
+        self.changed_on_rotate_face(f, -1, layer=layer)
+        return changed
+
+    def changed_due_to_faces(self, faces):
+        # Assmes layer 0.
+        changed_on_all = None
+        for f in faces:
+            changed = self.changed_due_to_face(f)
+            changed_on_all = changed if changed_on_all is None else np.intersect1d(changed_on_all, changed)
+        return changed_on_all
+
+    def state(self):
+        return self._cube.color_id()
+
+    def print_color_id(self):
+        print ' '.join(repr(y) for y in self._prev_state)
+
 if __name__ == '__main__':
     import sys
     N = int(sys.argv[1]) if len(sys.argv) >= 2 else 3
-    c = Cube(N)
+    face_colors=["white", "yellow",
+                 "blue", "green",
+                 "purple", "red",
+                 "gray", "none"]    
+    c = Cube(N, face_colors=face_colors)
 
     # do a 3-corner swap
     # c.rotate_face('R')
@@ -495,6 +524,12 @@ if __name__ == '__main__':
     # c.rotate_face('D', -1)
     # c.rotate_face('R', -1)
     # c.rotate_face('U')
+
+    d = CubeStickerIdDiscoverer(c)
+    print d.state()
+    print d.changed_due_to_face('U')
+    print d.changed_due_to_face('R')
+    print d.changed_due_to_faces('RF')
 
     c.draw_interactive(callback=print_cube)
     plt.show()
