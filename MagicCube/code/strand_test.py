@@ -79,8 +79,8 @@ class StrandtestUi(plt.Axes):
         return ''.join(map(lambda x: hex(x)[2:].rjust(2,'0'), self._rgb))
 
     def _initialize_widgets(self):
-        self._rgb_text = self.figure.text(0.075, 0.6, "LED color: #" + self._rgb_string())
-        self._ax_rgb = self.figure.add_axes([0.3, 0.6, 0.025, 0.025])
+        self._rgb_text = self.figure.text(0.075, 0.65, "LED color: #" + self._rgb_string())
+        self._ax_rgb = self.figure.add_axes([0.3, 0.65, 0.025, 0.025])
         self._btn_rgb = widgets.Button(self._ax_rgb, '')
 
         x, y, hx = 0.5, 0.9, 0.15
@@ -107,13 +107,13 @@ class StrandtestUi(plt.Axes):
 
         self._ax_led = [None]*self._led_count
         self._btn_led = [None]*self._led_count
-        x, y = 0.05, 0.5
+        x, y = 0.05, 0.55
         for i in xrange(self._led_count):
-            self._ax_led[i] = self.figure.add_axes([x, y, 0.05, 0.075])
+            self._ax_led[i] = self.figure.add_axes([x, y, 0.05, 0.05])
             self._btn_led[i] = widgets.Button(self._ax_led[i], '%d' % (i,))
             self._btn_led[i].on_clicked(partial(self.on_led_click, index=i))
             if i % 15 == 14:
-                y -= 0.1
+                y -= 0.05
                 x = 0.05
             else:
                 x += 0.05
@@ -124,6 +124,7 @@ class StrandtestUi(plt.Axes):
         color = '#' + rgb
         self._btn_led[index].color = color
         self._btn_led[index].hovercolor = color
+        plt.plot([], [])
         self.figure.canvas.draw()
 
     def on_rgb_change(self, val, index):
@@ -176,7 +177,7 @@ class StrandtestUi(plt.Axes):
             else:
                 self.rotate_face(event.key.upper(), direction)
                 
-        self._draw_cube()
+#        self._draw_cube()
 
     def _key_release(self, event):
         """Handler for key release event"""
@@ -224,7 +225,7 @@ class StrandtestUi(plt.Axes):
 
 def draw_strandtest_ui(controller):
     # Main call that draws the strand test UI figure.
-    fig = plt.figure(figsize=(7, 5))
+    fig = plt.figure(figsize=(10, 7))
     fig.add_axes(StrandtestUi(controller))
     return fig
 

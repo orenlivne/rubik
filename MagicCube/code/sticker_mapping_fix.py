@@ -25,7 +25,7 @@ if __name__ == "__main__":
     d = dict(d.items() + e.items())
     
     old = [33, 30, 27, 34, 31, 28, 35, 32, 29]
-    new = [24, 18, 18, 25, 22, 21, 26, 23, 20]
+    new = [24, 21, 18, 25, 22, 19, 26, 23, 20]
     e = dict(zip(old, new))
     d = dict(d.items() + e.items())
 

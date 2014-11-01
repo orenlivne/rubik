@@ -9,33 +9,51 @@ Author: Craig Calef <craig@dod.net>
 This code is covered under the MIT License
 '''
 
-import serial, time, sys, ledstripctrl
+import serial, time, sys, ledstripctrl, csv
 import matplotlib.pyplot as plt
 from cube_interactive import Cube
 
 '''Integrates MagicCube with the LED strip. Sends the cube state
 to the LED strip upon a call to send_cube_state().'''
 class CubeLedStripContoller(ledstripctrl.LedStripContoller):
-    def __init__(self, serial_stream, led_count, face_colors, debug=False):
-        ledstripctrl.LedStripContoller.__init__(self, serial_stream, led_count, debug=debug)
+    # Color of an LED that's turned off.
+    COLOR_OFF = '#000000'
+
+    def __init__(self, serial_stream, led_to_sticker_mapping, face_colors, debug=False):
+        self.debug = debug
+        self.led_to_sticker_mapping = led_to_sticker_mapping
+        self.led_count = max(led_to_sticker_mapping.iterkeys()) + 1
+        print 'LED count is ' + repr(self.led_count)
+        ledstripctrl.LedStripContoller.__init__(self, serial_stream, self.led_count, debug=debug)
         self.face_colors = map(lambda x: (x[1:] if x.startswith('#') else x).upper(), face_colors)
 
     def send_cube_state(self, sticker_color_id):
+        # Light each LED with the color of the corresponding sticker.
         print ' '.join(repr(y) for y in sticker_color_id)
-        for i in xrange(min(led_count, len(sticker_color_id))):
-            print 'Sticker %d: color %s' % (i, self.face_colors[sticker_color_id[i]])
-            self._led_set(i, self.face_colors[sticker_color_id[i]])
+        for led, sticker_id in self.led_to_sticker_mapping.iteritems():
+            color = self.face_colors[sticker_color_id[sticker_id]] if sticker_id >= 0 else CubeLedStripContoller.COLOR_OFF
+            if self.debug >= 1:
+                print 'LED %d, sticker %d, color %s' % (led, sticker_id, color)
+            self._led_set(led, color)
             self._show()
+
+def load_led_to_sticker_mapping(data):
+    # Load a comma-separated file with LED#,sticker# data. -1 sticker# indicates that the light
+    # should stay off. LED#, sticker# are 0-based.
+    return dict((int(items[0]), int(items[1])) for items in csv.reader(data, delimiter=','))
         
 if __name__ == '__main__':
     # Read command-line arguments.
     if len(sys.argv) != 3:
-        print 'Usage: ledstripctrl <arduino-usb-port> <led-count>'
+        print 'Usage: ledstripctrl <arduino-usb-port> <led-to-sticker-mapping-file>'
         sys.exit(1)
     # Name of USB port connected to the Arduino.
     serial_device = sys.argv[1]
     # Number of LED lights on the strip.
-    led_count = int(sys.argv[2])
+    with open(sys.argv[2], 'rb') as mapping_file:
+        led_to_sticker_mapping = load_led_to_sticker_mapping(mapping_file)
+        print led_to_sticker_mapping
+
     # Cube face colors. Each color must be in 6-letter uppercase hex format.
     # These are displayed on the screen.
     display_face_colors = ['#ffffff', '#ffcf00',
@@ -57,7 +75,7 @@ if __name__ == '__main__':
 
         # Start LED controller.
         print 'Starting controller'
-        controller = CubeLedStripContoller(stream, led_count, strip_face_colors, debug=1)
+        controller = CubeLedStripContoller(stream, led_to_sticker_mapping, strip_face_colors, debug=0)
     
         # Bring up the cube visualization. Add a call back that sends
         # the cube state to the Arduino.
