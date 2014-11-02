@@ -47,6 +47,7 @@ class LedStripContoller(object):
     def rainbow_cycle(self, num_cycles=5, delay=0):
         '''Makes a rainbow wheel that is equally distributed along the chain.'''
         num_colors = 384
+        colors = [None] * self.led_count
         for j in xrange(1): #xrange(num_colors * num_cycles):  # n cycles of all 384 colors in the wheel
             for i in xrange(self.led_count):
                 # tricky math! we use each pixel as a fraction of the full 384-color wheel
@@ -54,13 +55,16 @@ class LedStripContoller(object):
                 # Then add in j which makes the colors go around per pixel
                 # the % 384 is to make the wheel cycle around
                 r, g, b = self._wheel(((i * num_colors / self.led_count) + j) % num_colors)
-                self._led_set(i, '%02X%02X%02X' % (r, g, b))
+                colors[i] = '%02X%02X%02X' % (r, g, b)
+                self._led_set(i, colors[i])
+                colors
             self._show()
             time.sleep(delay)
+        return colors
 
     def _flush_read_buffer(self):
         data_from_arduino = self._serial_stream.readline().strip()
-        if self._debug >= 2:
+        if self._debug >= 3:
             print data_from_arduino
     
     def _show(self):
@@ -69,7 +73,7 @@ class LedStripContoller(object):
     
     def _led_set(self, led, rgb):
         outval = '%02X%0s' % (led, rgb)
-        if self._debug >= 1:
+        if self._debug >= 2:
             print 'Setting LED %d to %s (outval=%s)' % (led, rgb, outval)
         self._serial_stream.write('%s\n' % outval)
         self._flush_read_buffer()

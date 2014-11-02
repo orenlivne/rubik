@@ -374,8 +374,10 @@ class InteractiveCube(plt.Axes):
     def _solve_cube(self, *args):
         move_list = self.cube._move_list[:]
         for (face, n, layer) in move_list[::-1]:
-            self.rotate_face(face, -n, layer, steps=3)
+            self.rotate_face(face, -n, layer, steps=3, execute_call_back=False)
         self.cube._move_list = []
+        self._draw_cube()
+        self._execute_cube_callback()
 
     def _randomize_cube(self, *args):
         # Reset the cube.
@@ -389,7 +391,7 @@ class InteractiveCube(plt.Axes):
             face = InteractiveCube.FACES[np.random.randint(2 * self.cube.N)]
             n = np.random.randint(4)
             self.rotate_face(face, n, layer, steps=3, execute_call_back=False)
-            self._draw_cube()
+        self._draw_cube()
         self._execute_cube_callback()
 
     def _key_press(self, event):

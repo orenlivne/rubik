@@ -143,7 +143,13 @@ class StrandtestUi(plt.Axes):
         self._controller.blink(1)
 
     def _rainbow_cycle(self, *args):
-        self._controller.rainbow_cycle()
+        colors = self._controller.rainbow_cycle()
+        # Update LED buttons with rainbow colors.
+#        for index, rgb in enumerate(colors):
+#            color = '#' + rgb
+#            self._btn_led[index].color = color
+#            self._btn_led[index].hovercolor = color
+#        self.figure.canvas.draw()
 
     def _key_press(self, event):
         """Handler for key press events"""
