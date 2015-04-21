@@ -537,7 +537,7 @@ class CubeStickerIdDiscoverer(object):
         print ' '.join(repr(y) for y in self._prev_state)
 
     def discover_sticker_ids(self):
-        # Constants and aliaaes.
+        # Constants and aliases.
         faces = CubeStickerIdDiscoverer._FACES
         dim = 3
         N = self._cube.N
