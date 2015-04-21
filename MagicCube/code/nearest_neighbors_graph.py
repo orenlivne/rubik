@@ -20,14 +20,11 @@ if __name__ == "__main__":
         line, line_prev, edge_list = [], [], []
         for line in (map(int, line.strip().split()) for line in f):
             if line and line_prev:
-                print line, line_prev
-                for edge in line_edges(line_prev, line):
-                    print edge
-                    edge_list.append(edge)
+                for edge in line_edges(line_prev, line): edge_list.append(edge)
             line_prev = line
     
     g = nx.from_edgelist(edge_list, create_using=nx.Graph())
     for node in g:
-        print node, g.degree(node), sorted(g.neighbors(node))
-    print Counter((g.degree(node), 1) for node in g)
+        print 'sticker', node, 'degree', g.degree(node), sorted(g.neighbors(node))
+    print 'Degree frequencies', Counter(g.degree(node) for node in g)
     
