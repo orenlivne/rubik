@@ -10,6 +10,24 @@ from cube_interactive import Cube
 from game_of_life import GameOfLife
 from collections import Counter
 
+'''Returns an RGB color value for a color identifier between 0 and 384.
+Colors are a transition r - g -b - back to r.'''
+def wheel(wheel_pos):
+    q = wheel_pos / 128
+    if q == 0:
+        r = 127 - wheel_pos % 128  # Red down
+        g = wheel_pos % 128  # green up
+        b = 0  # blue off
+    elif q == 1:
+        g = 127 - wheel_pos % 128  # green down
+        b = wheel_pos % 128  # blue up
+        r = 0  # red off
+    elif q == 2:
+        b = 127 - wheel_pos % 128  # blue down 
+        r = wheel_pos % 128  # red up
+        g = 0  # green off
+    return r, g, b
+
 class GameOfLifeGui(plt.Axes):
     def __init__(self, cube=None,
                  interactive=True,
@@ -136,9 +154,16 @@ class GameOfLifeGui(plt.Axes):
         sticker_centroids = self._project(self.cube._sticker_centroids[:, :3])
 
         plastic_color = self.cube.plastic_color
-#        colors = np.asarray(self.cube.face_colors)[self.cube._colors]
-        game_colors = np.array([2 if u in self._game.live else 0 for u in self._game.g.nodes()])
-        colors = np.asarray(self.cube.face_colors)[game_colors]
+
+        '''Makes a rainbow wheel that is equally distributed along the chain.'''
+        num_colors = 384
+        led_count = 5
+        colors = np.array(['#%02X%02X%02X' % (wheel((( (self._game.live[u] if u in self._game.live else 0) * num_colors / led_count)) % num_colors))
+                           if u in self._game.live else 'white' for u in self._game.g.nodes()])
+#        game_colors = np.array([2 if u in self._game.live else 0 for u in self._game.g.nodes()])
+#        colors2 = np.asarray(self.cube.face_colors)[game_colors]
+        print colors
+        
         face_zorders = -face_centroids[:, 2]
         sticker_zorders = -sticker_centroids[:, 2]
 
