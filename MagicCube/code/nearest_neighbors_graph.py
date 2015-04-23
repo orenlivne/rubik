@@ -23,11 +23,12 @@ def cube_neighbor_graph(file_name):
 
 if __name__ == "__main__":
   # Read command-line arguments.
-  if len(sys.argv) != 2:
-    print 'Usage: nearest_neighbors_graph.py <line-adjacency-list-file>'
+  if len(sys.argv) != 3:
+    print 'Usage: nearest_neighbors_graph.py <line-adjacency-list-file> <output-pickle-file>'
     sys.exit(1)
 
   g = cube_neighbor_graph(sys.argv[1])
   for node in g:
     print 'sticker', node, 'degree', g.degree(node), sorted(g.neighbors(node))
   print 'Degree frequencies', Counter(g.degree(node) for node in g)
+  nx.write_gpickle(g, sys.argv[2])

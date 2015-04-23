@@ -194,11 +194,6 @@ class Cube:
         self._face_centroids[flag, :3] = np.dot(self._face_centroids[flag, :3],
                                                 M.T)
 
-    def draw_interactive(self, callback=None):
-        fig = plt.figure(figsize=(7, 5))
-        fig.add_axes(InteractiveCube(self, callback=callback))
-        return fig
-
     def color_id(self):
         # Return the color ID of each cube sticker, numbered 0..6*N^2-1.
         color_id = np.zeros((6 * self.N * self.N,), dtype=int)
@@ -307,6 +302,13 @@ class InteractiveCube(plt.Axes):
         self._ax_randomize = self.figure.add_axes([0.5, 0.05, 0.15, 0.075])
         self._btn_randomize = widgets.Button(self._ax_randomize, 'Randomize')
         self._btn_randomize.on_clicked(self._randomize_cube)
+
+        self._ax_quit = self.figure.add_axes([0.35, 0.05, 0.15, 0.075])
+        self._btn_quit = widgets.Button(self._ax_quit, 'Quit')
+        self._btn_quit.on_clicked(self._quit)
+
+    def _quit(self, *args):
+        plt.close()
 
     def _project(self, pts):
         return project_points(pts, self._current_rot, self._view, [0, 1, 0])
@@ -624,5 +626,7 @@ if __name__ == '__main__':
 #     d = CubeStickerIdDiscoverer(c)
 #     sticker_id = d.discover_sticker_ids()
 
-    c.draw_interactive(callback=print_cube)
+#    plt.ion()
+    fig = plt.figure(figsize=(7, 5))
+    fig.add_axes(InteractiveCube(c, callback=print_cube))
     plt.show()

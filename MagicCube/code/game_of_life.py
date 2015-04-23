@@ -1,6 +1,6 @@
 '''
 ============================================================
-The Game of Life on a 3x3x3 cube surface.
+The Game of Life on a graph.
 Created on Apr 22, 2015
 @author: Oren Livne <livne@uchicago.edu>
 ============================================================
@@ -35,7 +35,7 @@ class GameOfLife(object):
 if __name__ == '__main__':
   # Read command-line arguments.
   if len(sys.argv) != 2:
-    print 'Usage: game_of_life_on_cube.py <neighbors-graph-pickle-file>'
+    print 'Usage: game_of_life.py <neighbors-graph-pickle-file>'
     sys.exit(1)
   g = nx.read_gpickle(sys.argv[1])
 
