@@ -113,11 +113,11 @@ class GameOfLifeGui(plt.Axes):
     def _start_simulation_timer(self, event):
         # Create a new timer object. Set the interval to self._simulation_interval_msecs
         # milliseconds (1000 is default) and tell the timer what function should be called.
-        if self._simulation_id is not None:
-            self.fig.canvas.mpl_disconnect(self._simulation_id)
-        self._timer = fig.canvas.new_timer(interval=self._simulation_interval_msecs)
-        self._simulation_id = self._timer.add_callback(self._run_simulation, self)
-        self._timer.start()
+        if self._simulation_id is None:
+            self._timer = fig.canvas.new_timer(interval=self._simulation_interval_msecs)
+            self._timer.add_callback(self._run_simulation, self)
+            self._timer.start()
+            self._simulation_id = 1
 
     def _quit(self, *args):
         plt.close()
@@ -136,7 +136,9 @@ class GameOfLifeGui(plt.Axes):
         sticker_centroids = self._project(self.cube._sticker_centroids[:, :3])
 
         plastic_color = self.cube.plastic_color
-        colors = np.asarray(self.cube.face_colors)[self.cube._colors]
+#        colors = np.asarray(self.cube.face_colors)[self.cube._colors]
+        game_colors = np.array([2 if u in self._game.live else 0 for u in self._game.g.nodes()])
+        colors = np.asarray(self.cube.face_colors)[game_colors]
         face_zorders = -face_centroids[:, 2]
         sticker_zorders = -sticker_centroids[:, 2]
 
@@ -279,6 +281,8 @@ class GameOfLifeGui(plt.Axes):
         self._tick += 1
 #        print 'Tick', self._tick, 'live cells', ' '.join(map(str, sorted(self._game.live.iteritems())))
         print 'Tick', self._tick, 'population', len(self._game.live), 'population age', Counter(self._game.live.itervalues())
+        self._draw_cube()
+        self._execute_cube_callback()
 
 def print_cube(sticker_color_id):
     print ' '.join(repr(y) for y in sticker_color_id)

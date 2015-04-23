@@ -12,14 +12,14 @@ class GameOfLife(object):
     # Initializes a game of life on the undirected graph g, starting with the
     # initial configuration whose live cells are the list live.
     # from.
-    self._g = g
+    self.g = g
     # live = dictionary of live cell-location-to-cell-age.
     self.live = dict((u, 1) for u in live)
 
   def is_live_at_next_tick(self, u):
     # Returns True if and only the node u is alive at tick t+1 given the state
     # at tick t.
-    num_live_nbhrs = sum(1 for v in self._g.neighbors_iter(u) if v in self.live)
+    num_live_nbhrs = sum(1 for v in self.g.neighbors_iter(u) if v in self.live)
     return (num_live_nbhrs == 2 or num_live_nbhrs == 3) if u in self.live else (num_live_nbhrs == 3)
 
   def tick(self):
@@ -29,7 +29,7 @@ class GameOfLife(object):
     # before in neighboring cells of currently live cells
     self.live = dict(it.chain(((u, age+1) for u, age in self.live.iteritems()
                                if self.is_live_at_next_tick(u)),
-                              ((v, 1) for u in self.live for v in self._g.neighbors_iter(u)
+                              ((v, 1) for u in self.live for v in self.g.neighbors_iter(u)
                                if v not in self.live and self.is_live_at_next_tick(v))))
 
 if __name__ == '__main__':
