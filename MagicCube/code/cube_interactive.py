@@ -193,6 +193,7 @@ class Cube:
             y[flag] = np.dot(y[flag], M.T)
         self._face_centroids[flag, :3] = np.dot(self._face_centroids[flag, :3],
                                                 M.T)
+        print self._face_centroids[:5, :]
 
     def color_id(self):
         # Return the color ID of each cube sticker, numbered 0..6*N^2-1.
@@ -334,6 +335,7 @@ class InteractiveCube(plt.Axes):
             self._sticker_polys = []
 
             for i in xrange(len(colors)):
+                if i < 2: print i, stickers[i], colors[i]
                 fp = plt.Polygon(faces[i], facecolor=plastic_color,
                                  zorder=face_zorders[i])
                 sp = plt.Polygon(stickers[i], facecolor=colors[i],
@@ -346,6 +348,7 @@ class InteractiveCube(plt.Axes):
         else:
             # subsequent call: update the polygon objects
             for i in xrange(len(colors)):
+                if i == 0: print i, faces[i], face_zorders[i], stickers[i], sticker_zorders[i]
                 self._face_polys[i].set_xy(faces[i])
                 self._face_polys[i].set_zorder(face_zorders[i])
                 self._face_polys[i].set_facecolor(plastic_color)

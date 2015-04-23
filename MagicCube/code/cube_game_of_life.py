@@ -8,6 +8,7 @@ from matplotlib import widgets
 from projection import Quaternion, project_points
 from cube_interactive import Cube
 from game_of_life import GameOfLife
+from collections import Counter
 
 class GameOfLifeGui(plt.Axes):
     def __init__(self, cube=None,
@@ -270,10 +271,14 @@ class GameOfLifeGui(plt.Axes):
 
     def _run_simulation(self, *args):
         # Restart simulation on extinction or after the max # of timesteps has been reached.
+        # TODO(livne): restart when a cycle of a sufficiently small size is detected and repeated enough times.
         if self._tick == self._max_ticks or not self._game.live:
             self._init_simulation()
+        else:
+            self._game.tick()
         self._tick += 1
-        print 'Tick', self._tick, 'live cells', ' '.join(map(str, sorted(self._game.live.iteritems())))
+#        print 'Tick', self._tick, 'live cells', ' '.join(map(str, sorted(self._game.live.iteritems())))
+        print 'Tick', self._tick, 'population', len(self._game.live), 'population age', Counter(self._game.live.itervalues())
 
 def print_cube(sticker_color_id):
     print ' '.join(repr(y) for y in sticker_color_id)
