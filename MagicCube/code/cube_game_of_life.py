@@ -2,7 +2,7 @@
 # Adapted from cube code written by David Hogg
 #   https://github.com/davidwhogg/MagicCube
 
-import numpy as np, itertools as it, matplotlib.pyplot as plt, sys, networkx as nx, random
+import numpy as np, matplotlib.pyplot as plt, sys, networkx as nx, random, colorsys
 from matplotlib import widgets
 # from MagicCube.code.projection import Quaternion, project_points
 from projection import Quaternion, project_points
@@ -10,9 +10,9 @@ from cube_interactive import Cube
 from game_of_life import GameOfLife
 from collections import Counter
 
-'''Returns an RGB color value for a color identifier between 0 and 384.
-Colors are a transition r - g -b - back to r.'''
 def wheel(wheel_pos):
+    # Returns an RGB color value for a color identifier between 0 and 384.
+    # Colors are a transition r - g -b - back to r.
     q = wheel_pos / 128
     if q == 0:
         r = 127 - wheel_pos % 128  # Red down
@@ -28,6 +28,32 @@ def wheel(wheel_pos):
         g = 0  # green off
     return r, g, b
 
+def cell_color(age, max_age=5, num_colors=384):
+    # Maps a cell age to a uniformly distributed rainbow wheel. age = 0 denotes a dead cell.
+    r, g, b = wheel(((age * num_colors / max_age)) % num_colors)
+    return 'white' if age == 0 else '#%02X%02X%02X' % (r, g, b)
+
+def generate_colors(n):
+    '''Generate n colors and returns a list in hex format'''
+    HSV_tuples = [(x * 1.0 / n + .5, 0.6, 0.5) for x in range(n)]  # Uses HSV colors to find equidistant colors on color wheel
+    RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)  # use colorsys to convert all hsv values to rgb
+    RGB_set = []
+    for r, g, b in RGB_tuples:
+        color = (int(r * 255), int(g * 255), int(b * 255))
+        RGB_set.append(color)
+    hex_set = []
+    for tup in RGB_set:
+        hexa = "#%02x%02x%02x" % tup  # convert all values in list to hex for use in html
+        hex_set.append(hexa)
+    return_set = []
+    i = 0
+    while len(hex_set) > 0:  # reorder list so each subsequent color is farthest distance from adjacent colors
+        if i % 2 == 0:
+            return_set.append(hex_set.pop(0))
+        else:
+            return_set.append(hex_set.pop())
+    return return_set
+
 class GameOfLifeGui(plt.Axes):
     def __init__(self, cube=None,
                  interactive=True,
@@ -38,6 +64,7 @@ class GameOfLifeGui(plt.Axes):
                  callback=None,
                  **kwargs):
         # Game of Life simulation controls.
+        self.t = 0
         self._max_ticks = max_ticks
         self._simulation_interval_msecs = simulation_interval_msecs
         self._init_simulation()
@@ -153,17 +180,12 @@ class GameOfLifeGui(plt.Axes):
         face_centroids = self._project(self.cube._face_centroids[:, :3])
         sticker_centroids = self._project(self.cube._sticker_centroids[:, :3])
 
-        plastic_color = self.cube.plastic_color
-
-        '''Makes a rainbow wheel that is equally distributed along the chain.'''
-        num_colors = 384
-        led_count = 5
-        colors = np.array(['#%02X%02X%02X' % (wheel((( (self._game.live[u] if u in self._game.live else 0) * num_colors / led_count)) % num_colors))
-                           if u in self._game.live else 'white' for u in self._game.g.nodes()])
-#        game_colors = np.array([2 if u in self._game.live else 0 for u in self._game.g.nodes()])
-#        colors2 = np.asarray(self.cube.face_colors)[game_colors]
-        print colors
-        
+        plastic_color = self.cube.plastic_color       
+        colors = np.array([cell_color(self._random_index[self._game.live[u]] if u in self._game.live else 0) for u in self._game.g.nodes()])
+        # colors = np.array([cell_color(self.t, max_age=160) for u in xrange(54)])
+        # colors = np.array(generate_colors(54))
+        #print colors
+        self.t += 1
         face_zorders = -face_centroids[:, 2]
         sticker_zorders = -sticker_centroids[:, 2]
 
@@ -295,6 +317,8 @@ class GameOfLifeGui(plt.Axes):
         initial_population = random.sample(g.nodes(), initial_population_size)
         self._game = GameOfLife(g, initial_population)
         self._tick = -1
+        self._random_index = range(1, 384)
+        random.shuffle(self._random_index)
 
     def _run_simulation(self, *args):
         # Restart simulation on extinction or after the max # of timesteps has been reached.
@@ -309,9 +333,6 @@ class GameOfLifeGui(plt.Axes):
         self._draw_cube()
         self._execute_cube_callback()
 
-def print_cube(sticker_color_id):
-    print ' '.join(repr(y) for y in sticker_color_id)
-
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print 'Usage: cube_game_of_life.py <neighbors-graph-pickle-file>'
@@ -323,5 +344,5 @@ if __name__ == '__main__':
                  "gray", "none"]    
     c = Cube(3, face_colors=face_colors)
     fig = plt.figure(figsize=(7, 5))
-    fig.add_axes(GameOfLifeGui(c, callback=print_cube))
+    fig.add_axes(GameOfLifeGui(c))
     plt.show()
