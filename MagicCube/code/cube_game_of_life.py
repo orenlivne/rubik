@@ -28,9 +28,9 @@ def wheel(wheel_pos):
         g = 0  # green off
     return r, g, b
 
-def cell_color(age, max_age=5, num_colors=384):
+def cell_color(age, led_count=5, num_colors=384):
     # Maps a cell age to a uniformly distributed rainbow wheel. age = 0 denotes a dead cell.
-    r, g, b = wheel(((age * num_colors / max_age)) % num_colors)
+    r, g, b = wheel(((age * num_colors / led_count)) % num_colors)
     return 'white' if age == 0 else '#%02X%02X%02X' % (r, g, b)
 
 def generate_colors(n):
@@ -181,7 +181,8 @@ class GameOfLifeGui(plt.Axes):
         sticker_centroids = self._project(self.cube._sticker_centroids[:, :3])
 
         plastic_color = self.cube.plastic_color       
-        colors = np.array([cell_color(self._random_index[self._game.live[u]] if u in self._game.live else 0) for u in self._game.g.nodes()])
+        colors = np.array([cell_color(self._game.live[u] if u in self._game.live else 0) for u in self._game.g.nodes()])
+        #colors = np.array([cell_color(self._random_index[self._game.live[u]] if u in self._game.live else 0) for u in self._game.g.nodes()])
         # colors = np.array([cell_color(self.t, max_age=160) for u in xrange(54)])
         # colors = np.array(generate_colors(54))
         #print colors
